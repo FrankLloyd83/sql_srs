@@ -3,7 +3,20 @@ import pandas as pd
 import duckdb
 from duckdb.duckdb import ParserException, CatalogException, BinderException
 
-st.write("Hello world!")
+st.write("""
+# SQL SRS
+Spaced Repetition System for SQL practice
+""")
+
+option = st.selectbox(
+    "How would you like to review?",
+    ("Joins", "GroupBy", "Window Functions"),
+    index=None,
+    placeholder="Select theme..."
+)
+
+st.write("You selected:", option)
+
 data = {"a":[1, 2, 3], "b":[4, 5, 6]}
 df = pd.DataFrame(data)
 
