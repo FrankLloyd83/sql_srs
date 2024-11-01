@@ -2,41 +2,48 @@ import streamlit as st
 import pandas as pd
 import duckdb
 from duckdb.duckdb import ParserException, CatalogException, BinderException
+import io
 
-st.write("""
-# SQL SRS
-Spaced Repetition System for SQL practice
-""")
 
-option = st.selectbox(
-    "How would you like to review?",
-    ("Joins", "GroupBy", "Window Functions"),
-    index=None,
-    placeholder="Select theme..."
-)
+csv = """
+beverage,price
+orange juice,2.5
+Expresso,2
+Tea,3
+"""
+beverages = pd.read_csv(io.StringIO(csv))
 
-st.write("You selected:", option)
+csv2 = """
+food_item,food_price
+cookie juice,2.5
+chocolatine,2
+muffin,3
+"""
+food_items = pd.read_csv(io.StringIO(csv2))
 
-data = {"a":[1, 2, 3], "b":[4, 5, 6]}
-df = pd.DataFrame(data)
+answer = """
+SELECT * FROM beverages
+CROSS JOIN food_items
+"""
 
-input_text = st.text_area(label="Entrez votre texte")
-st.write(input_text)
-try:
-    df_request = duckdb.sql(input_text).df()
-except AttributeError:
-    df_request = df
-except ParserException:
-    df_request = df
-    st.write("Bad request")
-except CatalogException:
-    df_request = df
-    st.write("Bad table name")
-except BinderException:
-    df_request = df
-    st.write("Bad column name")
+solution = duckdb.sql(answer).df()
 
-try:
-    st.dataframe(df_request)
-except NameError:
-    pass
+st.header("Enter your code:")
+query = st.text_area(label="Your SQL code here", key="user_input")
+
+if query:
+    result = duckdb.sql(query).df()
+    st.dataframe(result)
+
+tab2, tab3 = st.tabs(["Tables", "Solution"])
+
+with tab2:
+    st.write("table: beverages")
+    st.dataframe(beverages)
+    st.write("table: food_items")
+    st.dataframe(food_items)
+    st.write("Expected:")
+    st.dataframe(solution)
+
+with tab3:
+    st.write(answer)
