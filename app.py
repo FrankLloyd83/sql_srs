@@ -17,11 +17,15 @@ with st.sidebar:
     exercise = con.execute(f"SELECT * FROM memory_state WHERE theme = '{theme}'").df()
     st.write(exercise)
 
-    exercise_name = exercise.loc[0, "exercise_name"]
-    with open(f"answers/{exercise_name}.sql", "r", encoding="utf_8") as f:
-        answer = f.read()
+    try:
+        exercise_name = exercise.loc[0, "exercise_name"]
+        with open(f"answers/{exercise_name}.sql", "r", encoding="utf_8") as f:
+            answer = f.read()
+        solution_df = con.execute(answer).df()
+    except KeyError:
+        answer = None
 
-    solution_df = con.execute(answer).df()
+
 
 
 st.header("Enter your code:")
@@ -47,11 +51,17 @@ if query:
 tab2, tab3 = st.tabs(["Tables", "Solution"])
 
 with tab2:
-    exercise_tables = exercise.loc[0, "tables"]
-    for table in exercise_tables:
-        st.write(f"table: {table}")
-        df_table = con.execute(f"SELECT * FROM {table}").df()
-        st.dataframe(df_table)
+    try:
+        exercise_tables = exercise.loc[0, "tables"]
+        for table in exercise_tables:
+            st.write(f"table: {table}")
+            df_table = con.execute(f"SELECT * FROM {table}").df()
+            st.dataframe(df_table)
+    except KeyError:
+        st.write("Please select a theme.")
 
 with tab3:
-    st.write(answer)
+    if answer:
+        st.write(answer)
+    else:
+        st.write("Please select a theme.")
