@@ -57,5 +57,4 @@ with tab3:
     exercise_name = exercise.loc[0, "exercise_name"]
     with open(f"answers/{exercise_name}.sql", "r", encoding="utf_8") as f:
         answer = f.read()
-    print(answer)
     st.write(answer)
