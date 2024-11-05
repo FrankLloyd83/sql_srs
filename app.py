@@ -1,53 +1,59 @@
 # pylint: disable=missing-module-docstring
-import io
+# pylint: disable=exec-used
 
+import os
+import logging
 import duckdb
-import pandas as pd
 import streamlit as st
 
-CSV = """
-beverage,price
-orange juice,2.5
-Expresso,2
-Tea,3
-"""
-beverages = pd.read_csv(io.StringIO(CSV))
+if "data" not in os.listdir():
+    logging.error(os.listdir())
+    logging.error("Creating folder data")
+    os.mkdir("data")
 
-CSV2 = """
-food_item,food_price
-cookie juice,2.5
-chocolatine,2
-muffin,3
-"""
-food_items = pd.read_csv(io.StringIO(CSV2))
+if "exercises_sql_tables.duckdb" not in os.listdir("data"):
+    with open("init_db.py", encoding="utf_8") as f:
+        exec(f.read())
 
-ANSWER_STR = """
-SELECT * FROM beverages
-CROSS JOIN food_items
-"""
-
-solution_df = duckdb.sql(ANSWER_STR).df()
+con = duckdb.connect(database="data/exercises_sql_tables.duckdb", read_only=False)
 
 with st.sidebar:
-    option = st.selectbox(
+    theme = st.selectbox(
         "How would you like to review?",
-        ("Joins", "GroupBy", "Window Functions"),
+        ("cross_joins", "GroupBy", "window_functions"),
         index=None,
         placeholder="Select theme...",
     )
 
-    st.write("You selected:", option)
+    st.write("You selected:", theme)
+
+    exercise = (
+        con.execute(f"SELECT * FROM memory_state WHERE theme = '{theme}'")
+        .df()
+        .sort_values("last_reviewed")
+        .reset_index()
+    )
+    st.write(exercise)
+
+    try:
+        exercise_name = exercise.loc[0, "exercise_name"]
+        with open(f"answers/{exercise_name}.sql", "r", encoding="utf_8") as f:
+            ANSWER = f.read()
+        solution_df = con.execute(ANSWER).df()
+    except KeyError:
+        ANSWER = None
+    except FileNotFoundError:
+        ANSWER = (
+            "The answer is not available yet... But you won't really need it, right?"
+        )
 
 
 st.header("Enter your code:")
 query = st.text_area(label="Your SQL code here", key="user_input")
 
 if query:
-    result = duckdb.sql(query).df()
+    result = con.execute(query).df()
     st.dataframe(result)
-
-    if len(result.columns) != len(solution_df.columns):
-        st.write("Some columns are missing!")
 
     try:
         result = result[solution_df.columns]
@@ -65,12 +71,17 @@ if query:
 tab2, tab3 = st.tabs(["Tables", "Solution"])
 
 with tab2:
-    st.write("table: beverages")
-    st.dataframe(beverages)
-    st.write("table: food_items")
-    st.dataframe(food_items)
-    st.write("Expected:")
-    st.dataframe(solution_df)
+    try:
+        exercise_tables = exercise.loc[0, "tables"]
+        for table in exercise_tables:
+            st.write(f"table: {table}")
+            df_table = con.execute(f"SELECT * FROM {table}").df()
+            st.dataframe(df_table)
+    except KeyError:
+        st.write("Please select a theme.")
 
 with tab3:
-    st.write(ANSWER_STR)
+    if ANSWER:
+        st.write(ANSWER)
+    else:
+        st.write("Please select a theme.")
