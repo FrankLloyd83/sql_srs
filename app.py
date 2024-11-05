@@ -1,6 +1,19 @@
 # pylint: disable=missing-module-docstring
+# pylint: disable=exec-used
+
+import os
+import logging
 import duckdb
 import streamlit as st
+
+if "data" not in os.listdir():
+    logging.error(os.listdir())
+    logging.error("Creating folder data")
+    os.mkdir("data")
+
+if "exercises_sql_tables.duckdb" not in os.listdir("data"):
+    with open("init_db.py", encoding="utf_8") as f:
+        exec(f.read())
 
 con = duckdb.connect(database="data/exercises_sql_tables.duckdb", read_only=False)
 
@@ -25,8 +38,8 @@ with st.sidebar:
     try:
         exercise_name = exercise.loc[0, "exercise_name"]
         with open(f"answers/{exercise_name}.sql", "r", encoding="utf_8") as f:
-            answer = f.read()
-        solution_df = con.execute(answer).df()
+            ANSWER = f.read()
+        solution_df = con.execute(ANSWER).df()
     except KeyError:
         ANSWER = None
     except FileNotFoundError:
@@ -68,7 +81,7 @@ with tab2:
         st.write("Please select a theme.")
 
 with tab3:
-    if answer:
-        st.write(answer)
+    if ANSWER:
+        st.write(ANSWER)
     else:
         st.write("Please select a theme.")
