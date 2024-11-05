@@ -17,35 +17,33 @@ if "exercises_sql_tables.duckdb" not in os.listdir("data"):
 
 con = duckdb.connect(database="data/exercises_sql_tables.duckdb", read_only=False)
 
+available_themes = con.execute("SELECT DISTINCT theme FROM memory_state").df().values
+
 with st.sidebar:
     theme = st.selectbox(
         "How would you like to review?",
-        ("cross_joins", "GroupBy", "window_functions"),
+        available_themes,
         index=None,
         placeholder="Select theme...",
     )
 
-    st.write("You selected:", theme)
+    if theme:
+        st.write("You selected:", theme)
+        select_exercise_query = f"SELECT * FROM memory_state WHERE theme = '{theme}'"
+    else:
+        select_exercise_query = f"SELECT * FROM memory_state"
 
     exercise = (
-        con.execute(f"SELECT * FROM memory_state WHERE theme = '{theme}'")
+        con.execute(select_exercise_query)
         .df()
         .sort_values("last_reviewed")
-        .reset_index()
+        .reset_index(drop=True)
     )
     st.write(exercise)
-
-    try:
-        exercise_name = exercise.loc[0, "exercise_name"]
-        with open(f"answers/{exercise_name}.sql", "r", encoding="utf_8") as f:
-            ANSWER = f.read()
-        solution_df = con.execute(ANSWER).df()
-    except KeyError:
-        ANSWER = None
-    except FileNotFoundError:
-        ANSWER = (
-            "The answer is not available yet... But you won't really need it, right?"
-        )
+    exercise_name = exercise.loc[0, "exercise_name"]
+    with open(f"answers/{exercise_name}.sql", "r", encoding="utf_8") as f:
+        ANSWER = f.read()
+    solution_df = con.execute(ANSWER).df()
 
 
 st.header("Enter your code:")
