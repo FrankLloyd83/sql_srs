@@ -1,6 +1,4 @@
-"""
-init_db.py
-"""
+# pylint: disable=missing-module-docstring
 
 import io
 import pandas as pd
