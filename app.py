@@ -14,7 +14,7 @@ with st.sidebar:
 
     st.write("You selected:", theme)
 
-    exercise = con.execute(f"SELECT * FROM memory_state WHERE theme = '{theme}'").df()
+    exercise = con.execute(f"SELECT * FROM memory_state WHERE theme = '{theme}'").df().sort_values("last_reviewed").reset_index()
     st.write(exercise)
 
     try:
@@ -24,6 +24,8 @@ with st.sidebar:
         solution_df = con.execute(answer).df()
     except KeyError:
         answer = None
+    except FileNotFoundError:
+        answer = "The answer is not available yet... But you won't really need it, right?"
 
 
 
